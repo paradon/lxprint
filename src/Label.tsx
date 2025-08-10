@@ -30,9 +30,9 @@ function LabelSvg({
       const textElement = ref.current.getElementById(
         "labelText",
       ) as SVGTextElement;
-      const bbox = textElement.getBBox();
+      const bbox = textElement.getBoundingClientRect();
       setWidth(bbox.width);
-      setHeight(bbox.height);
+      setHeight(Math.max(bbox.height, textElement.clientHeight));
       onChange(ref.current.outerHTML, bbox.width, bbox.height);
     }
   }, [text, width, height, align, font]);
@@ -81,11 +81,13 @@ function LabelCanvas({
   text,
   align,
   font,
+  length,
   onChangeBitmap,
 }: {
   text: string;
   align: AlignmentType;
   font: string;
+  length: number | null;
   onChangeBitmap: (x: ImageData) => void;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -109,16 +111,53 @@ function LabelCanvas({
       image.onload = () => {
         if (ref.current) {
           context.clearRect(0, 0, ref.current.width, ref.current.height);
-          context.drawImage(image, 0, 0, 384, 384 * (height / width));
+          const svgAspect = width / height;
+          const canvasAspect = ref.current.width / ref.current.height;
+          if (!length) {
+            // Size is set to auto
+            context.drawImage(
+              image,
+              0,
+              0,
+              ref.current.width,
+              ref.current.height,
+            );
+          } else if (svgAspect > canvasAspect) {
+            // Content has wider aspect ratio, so center vertically
+            const virtualHeight = ref.current.width / svgAspect / canvasAspect;
+            const offset = (ref.current.height - virtualHeight) / 2;
+            context.drawImage(
+              image,
+              0,
+              offset,
+              ref.current.width,
+              virtualHeight,
+            );
+          } else {
+            // Content has taller aspect ratio.  Position based on align prop.
+            const virtualWidth = (ref.current.height / height) * width;
+            const offset =
+              align == "left"
+                ? 0
+                : (ref.current.width - virtualWidth) /
+                  (align == "right" ? 1 : 2);
+            context.drawImage(
+              image,
+              offset,
+              0,
+              virtualWidth,
+              ref.current.height,
+            );
+          }
           onChangeBitmap(
-            context.getImageData(0, 0, 384, 384 * (height / width)),
+            context.getImageData(0, 0, ref.current.width, ref.current.height),
           );
         }
       };
 
       image.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
     }
-  }, [svgData]);
+  }, [svgData, length]);
 
   return (
     <>
@@ -131,8 +170,12 @@ function LabelCanvas({
       <canvas
         ref={ref}
         width="384"
-        height={384 * (height / width)}
-        style={{ border: "1px solid black", padding: "10px", backgroundColor: "white" }}
+        height={length || 384 * (height / width)}
+        style={{
+          border: "1px solid black",
+          padding: "10px",
+          backgroundColor: "white",
+        }}
       />
     </>
   );
@@ -161,6 +204,24 @@ function TextAlignButton({
       />
       {text}
     </label>
+  );
+}
+
+function LengthSelect({
+  length,
+  setLength,
+}: {
+  length: number | null;
+  setLength: (x: number | null) => void;
+}) {
+  return (
+    <select
+      value={length || "auto"}
+      onChange={(e) => setLength(parseInt(e.target.value) || null)}
+    >
+      <option value="auto">Auto</option>
+      <option value="240">30mm</option>
+    </select>
   );
 }
 
@@ -223,6 +284,7 @@ export function LabelMaker() {
   const [align, setAlign] = useState<"left" | "center" | "right">("left");
   const [bitmap, setBitmap] = useState<ImageData>();
   const [font, setFont] = useState<string>("sans-serif");
+  const [length, setLength] = useState<number | null>(null);
 
   const { printer, printerStatus } = use(PrinterContext);
 
@@ -238,11 +300,13 @@ export function LabelMaker() {
         text={text}
         align={align}
         font={font}
+        length={length}
         onChangeBitmap={(x: ImageData) => setBitmap(x)}
       />
       <div>
         <TextAlign align={align} setAlign={setAlign} />
         <FontSelect font={font} setFont={setFont} />
+        <LengthSelect length={length} setLength={setLength} />
         <div>
           <textarea
             value={text}
