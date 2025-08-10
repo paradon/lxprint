@@ -124,7 +124,7 @@ function LabelCanvas({
             );
           } else if (svgAspect > canvasAspect) {
             // Content has wider aspect ratio, so center vertically
-            const virtualHeight = ref.current.width / svgAspect / canvasAspect;
+            const virtualHeight = (ref.current.width / width) * height;
             const offset = (ref.current.height - virtualHeight) / 2;
             context.drawImage(
               image,
@@ -220,7 +220,7 @@ function LengthSelect({
       onChange={(e) => setLength(parseInt(e.target.value) || null)}
     >
       <option value="auto">Auto</option>
-      <option value="220">28mm</option>
+      <option value="230">28mm</option>
     </select>
   );
 }
