@@ -132,7 +132,7 @@ function LabelCanvas({
         ref={ref}
         width="384"
         height={384 * (height / width)}
-        style={{ border: "1px solid black", padding: "10px" }}
+        style={{ border: "1px solid black", padding: "10px", backgroundColor: "white" }}
       />
     </>
   );
