@@ -14,10 +14,12 @@ function LabelSvg({
   text,
   onChange,
   align,
+  font,
 }: {
   text: string;
   onChange: (svg: string, width: number, height: number) => void;
   align: AlignmentType;
+  font: string;
 }) {
   const ref = useRef<SVGSVGElement>(null);
   const [width, setWidth] = useState<number>(0);
@@ -33,7 +35,7 @@ function LabelSvg({
       setHeight(bbox.height);
       onChange(ref.current.outerHTML, bbox.width, bbox.height);
     }
-  }, [text, width, height, align]);
+  }, [text, width, height, align, font]);
 
   const [xPos, textAnchor] = ((): [number, "start" | "middle" | "end"] => {
     switch (align) {
@@ -62,7 +64,7 @@ function LabelSvg({
           x={xPos}
           y="0"
           id="labelText"
-          style={{ textAnchor: textAnchor, fontFamily: "sans-serif" }}
+          style={{ textAnchor: textAnchor, fontFamily: font }}
         >
           {text.split("\n").map((x, i) => (
             <tspan key={i} x={xPos} dy="1em">
@@ -78,10 +80,12 @@ function LabelSvg({
 function LabelCanvas({
   text,
   align,
+  font,
   onChangeBitmap,
 }: {
   text: string;
   align: AlignmentType;
+  font: string;
   onChangeBitmap: (x: ImageData) => void;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -122,6 +126,7 @@ function LabelCanvas({
         text={text}
         onChange={(s, w, h) => onSvgChange(s, w, h)}
         align={align}
+        font={font}
       />
       <canvas
         ref={ref}
@@ -156,6 +161,24 @@ function TextAlignButton({
       />
       {text}
     </label>
+  );
+}
+
+function FontSelect({
+  font,
+  setFont,
+}: {
+  font: string;
+  setFont: (x: string) => void;
+}) {
+  return (
+    <select value={font} onChange={(e) => setFont(e.target.value)}>
+      <option value="serif">serif</option>
+      <option value="sans-serif">sans-serif</option>
+      <option value="cursive">cursive</option>
+      <option value="monospace">monospace</option>
+      <option value="fantasy">fantasy</option>
+    </select>
   );
 }
 
@@ -199,6 +222,7 @@ export function LabelMaker() {
   const [text, setText] = useState("Hello");
   const [align, setAlign] = useState<"left" | "center" | "right">("left");
   const [bitmap, setBitmap] = useState<ImageData>();
+  const [font, setFont] = useState<string>("sans-serif");
 
   const { printer, printerStatus } = use(PrinterContext);
 
@@ -213,10 +237,12 @@ export function LabelMaker() {
       <LabelCanvas
         text={text}
         align={align}
+        font={font}
         onChangeBitmap={(x: ImageData) => setBitmap(x)}
       />
       <div>
         <TextAlign align={align} setAlign={setAlign} />
+        <FontSelect font={font} setFont={setFont} />
         <div>
           <textarea
             value={text}
