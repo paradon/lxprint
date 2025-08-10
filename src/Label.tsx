@@ -220,7 +220,7 @@ function LengthSelect({
       onChange={(e) => setLength(parseInt(e.target.value) || null)}
     >
       <option value="auto">Auto</option>
-      <option value="240">30mm</option>
+      <option value="220">28mm</option>
     </select>
   );
 }
