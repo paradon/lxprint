@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 
 import packageConfig from "./package.json";
 
+// @ts-ignore
 import * as child from "child_process";
 
 function commitHash() {

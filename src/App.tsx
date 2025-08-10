@@ -12,7 +12,7 @@ function App() {
       <h1>Thermal Printer</h1>
       <Printer />
       <LabelMaker />
-      <div id='footer'><p>Version {__APP_VERSION__}-{__COMMIT_HASH__}</p></div>
+      <div id='footer'><p>Version {__APP_VERSION__}+{__COMMIT_HASH__}</p></div>
     </PrinterContextProvider>
   )
 }
