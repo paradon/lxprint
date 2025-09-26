@@ -167,16 +167,26 @@ function LabelCanvas({
         align={align}
         font={font}
       />
-      <canvas
-        ref={ref}
-        width="384"
-        height={length || 384 * (height / width)}
+      <div
         style={{
           border: "1px solid black",
-          padding: "10px",
-          backgroundColor: "white",
+          paddingTop: "64px",
+          paddingBottom: "20px",
+          paddingLeft: "32px",
+          paddingRight: "32px",
+          backgroundColor: "lightgrey",
         }}
-      />
+      >
+        <canvas
+          ref={ref}
+          width="384"
+          height={length || 384 * (height / width)}
+          style={{
+            margin: 0,
+            backgroundColor: "white",
+          }}
+        />
+      </div>
     </>
   );
 }
@@ -295,7 +305,7 @@ export function LabelMaker() {
   };
 
   return (
-    <div>
+    <div style={{ clear: "both" }}>
       <LabelCanvas
         text={text}
         align={align}
