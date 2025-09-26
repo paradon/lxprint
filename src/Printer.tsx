@@ -1,7 +1,11 @@
-import { use } from "react";
+import { use, useState } from "react";
 import "core-js/proposals/array-buffer-base64";
 
+import { type PrinterStatus } from "./lib/printer.ts";
+import { drivers } from "./lib/drivers.ts";
 import { PrinterContext } from "./context.tsx";
+import { type LXPrinterStatus } from "./lib/lxprinter.ts";
+import { type YHKPrinterStatus } from "./lib/yhkprinter.ts";
 
 function Battery({ level, charging }: { level?: number; charging?: boolean }) {
   return (
@@ -50,56 +54,116 @@ function ConnectedState({ state }: { state?: string }) {
   }
 }
 
+function DriverSelect({
+  driver,
+  setDriver,
+}: {
+  driver: string;
+  setDriver: (x: string) => void;
+}) {
+  return (
+    <select value={driver} onChange={(e) => setDriver(e.target.value)}>
+      {drivers().map((x) => (
+        <option value={x} key={x}>
+          {x}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function ConnectButton({
   state,
   connect,
   disconnect,
 }: {
   state?: string;
-  connect: () => void;
+  connect: (driver: string) => void;
   disconnect: () => void;
 }) {
-  if (state && ["connected", "connecting", "printing"].includes(state))
-    return <button onClick={disconnect}>Disconnect</button>;
+  const [driver, setDriver] = useState(drivers()[0]);
 
-  return <button onClick={connect}>Connect</button>;
+  if (state && ["connected", "connecting", "printing"].includes(state))
+    return (
+      <div>
+        <button onClick={disconnect}>Disconnect</button>
+      </div>
+    );
+
+  return (
+    <div>
+      <DriverSelect driver={driver} setDriver={setDriver} />
+      <button onClick={() => connect(driver)}>Connect</button>
+    </div>
+  );
+}
+
+function LXPrinter({ status }: { status: LXPrinterStatus }) {
+  return (
+    <>
+      <div style={{ float: "left", padding: "5px" }}>
+        <Battery level={status.battery} charging={status.charging} />
+      </div>
+      {status.noPaper ? <div>⚠️ No Paper</div> : <></>}
+      {status.lowBatt ? <div>⚠️ Low Battery</div> : <></>}
+      {status.overheat ? <div>⚠️ Overheat</div> : <></>}
+    </>
+  );
+}
+
+function YHKPrinter({ status }: { status: YHKPrinterStatus }) {
+  return (
+    <>
+      <div style={{ float: "left", padding: "5px" }}>
+        <Battery level={status.battery} />
+      </div>
+      <div>{status.voltage}mV</div>
+    </>
+  );
+}
+
+function Status({
+  driver,
+  status,
+}: {
+  driver?: string;
+  status: PrinterStatus;
+}) {
+  switch (driver) {
+    case "lx":
+      return <LXPrinter status={status} />;
+    case "yhk":
+      return <YHKPrinter status={status} />;
+    default:
+      return;
+  }
 }
 
 function Printer() {
-  const { printer, printerStatus } = use(PrinterContext);
-
-  const connect = async () => {
-    return await printer.connect();
-  };
+  const { printer, printerStatus, errors, connect } = use(PrinterContext);
 
   const disconnect = async () => {
-    return await printer.disconnect();
+    return await printer?.disconnect();
   };
 
   return (
     <>
       <div style={{ padding: "10px" }}>
-        <div style={{ float: "left", padding: "5px" }}>
-          <Battery
-            level={printerStatus.battery}
-            charging={printerStatus.charging}
-          />
-        </div>
         <div style={{ padding: "5px", float: "right" }}>
           <ConnectButton
-            state={printerStatus.state}
+            state={printerStatus?.state}
             connect={connect}
             disconnect={disconnect}
           />
         </div>
         <div style={{ padding: "5px", width: "100%", textAlign: "left" }}>
           <ConnectedState state={printerStatus.state} />
-          {printer.name || "No Printer"}
+          {printer?.name || "No Printer"}
         </div>
-        {printer.error ? <div>⚠️ {printer.error}</div> : <></>}
-        {printerStatus.noPaper ? <div>⚠️ No Paper</div> : <></>}
-        {printerStatus.lowBatt ? <div>⚠️ Low Battery</div> : <></>}
-        {printerStatus.overheat ? <div>⚠️ Overheat</div> : <></>}
+        <Status driver={printer?.driverName} status={printerStatus} />
+        {errors.map((x) => (
+          <div>⚠️ {x}</div>
+        ))}
       </div>
     </>
   );
